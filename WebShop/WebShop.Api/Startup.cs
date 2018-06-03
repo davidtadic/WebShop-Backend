@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WebShop.Api.Helpers;
+using WebShop.Api.Middleware;
 
 namespace WebShop.Api
 {
@@ -24,8 +25,8 @@ namespace WebShop.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            IConfiguration appSettings = Configuration.GetSection("AuthCredentials");
-            services.Configure<AuthCredentials>(appSettings);
+            IConfiguration appSettings = Configuration.GetSection("ApiConfiguration");
+            services.Configure<ApiConfiguration>(appSettings);
             services.AddMvc();
         }
 
@@ -42,6 +43,8 @@ namespace WebShop.Api
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());
+
+            app.UseMiddleware(typeof(ErrorHandlingMiddleware));
 
             app.UseMvc();
         }
