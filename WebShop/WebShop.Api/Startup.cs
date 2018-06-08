@@ -40,6 +40,7 @@ namespace WebShop.Api
 
             app.UseCors(builder => builder
                         .WithOrigins("http://localhost:4200")
+                        .WithOrigins("http://webshoptest.azurewebsites.net")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());
