@@ -27,6 +27,7 @@ namespace WebShop.Api.Controllers
         [Produces("application/json")]
         public List<CalculationResponseModel> CalculatePremiums([FromBody]CalculationRequestModel model)
         {
+            model.Tariff.InsuranceEndDate = model.Tariff.FullYear ? null : model.Tariff.InsuranceEndDate;
             List<CalculationRequestModel> requestModels = PrepareDataForCalculation(model);
             List<CalculationResponseModel> result = new List<CalculationResponseModel>();
 
@@ -50,12 +51,27 @@ namespace WebShop.Api.Controllers
         public CalculationResponseModel CalculateTravelStarPremium([FromBody]CalculationRequestModel model)
         {
             CalculationResponseModel result = new CalculationResponseModel();
+            model.Tariff.InsuranceEndDate = model.Tariff.FullYear ? null : model.Tariff.InsuranceEndDate;
 
             string requestString = JsonConvert.SerializeObject(model);
             string responseString = ApiHelper.MakeRequest(_apiConfiguration.Url + "travel/calculation", _apiConfiguration.Username, _apiConfiguration.Password, "POST", requestString);
             result = JsonConvert.DeserializeObject<CalculationResponseModel>(responseString);
             result.ProductVariant = model.Tariff.ProductVariant;
             result.AmountInsured = model.Tariff.AmountInsured;
+
+            return result;
+        }
+
+        [HttpPost("OfferRequest")]
+        [Produces("application/json")]
+        public OfferResponseModel OfferRequest([FromBody]OfferRequestModel model)
+        {
+            model.Tariff.InsuranceEndDate = model.Tariff.FullYear ? null : model.Tariff.InsuranceEndDate;
+            OfferResponseModel result = new OfferResponseModel();
+
+            string requestString = JsonConvert.SerializeObject(model);
+            string responseString = ApiHelper.MakeRequest(_apiConfiguration.Url + "travel/offer", _apiConfiguration.Username, _apiConfiguration.Password, "POST", requestString);
+            result = JsonConvert.DeserializeObject<OfferResponseModel>(responseString);
 
             return result;
         }
