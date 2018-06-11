@@ -1,11 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using WebShop.Api.Helpers;
@@ -74,6 +69,33 @@ namespace WebShop.Api.Controllers
             result = JsonConvert.DeserializeObject<OfferResponseModel>(responseString);
 
             return result;
+        }
+
+        [HttpPost("ProceedToPayment")]
+        [Produces("application/json")]
+        public string ProceedToPayment([FromBody]PaymentRequestModel model)
+        {
+            string requestString = JsonConvert.SerializeObject(model.PolicyRequest);
+            string responseString = ApiHelper.MakeRequest(_apiConfiguration.Url + "travel/policy", _apiConfiguration.Username, _apiConfiguration.Password, "PUT", requestString);
+            PolicyResponseModel policyResponse = JsonConvert.DeserializeObject<PolicyResponseModel>(responseString);
+
+            string paymentForm = PaymentHelper.GenerateForm(policyResponse.PolicyNumber, (int)model.OfferResponse.PremiumRsd);
+
+            return paymentForm;
+        }
+
+        [HttpPost("SuccessCallback")]
+        [Produces("application/json")]
+        public RedirectResult SuccessCallback()
+        {
+            return Redirect(_apiConfiguration.WebUrl + "success-page"); 
+        }
+
+        [HttpPost("DeclinedCallback")]
+        [Produces("application/json")]
+        public RedirectResult DeclinedCallback()
+        {
+            return Redirect(_apiConfiguration.WebUrl + "declined-page");
         }
 
         [NonAction]
