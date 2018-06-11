@@ -79,7 +79,7 @@ namespace WebShop.Api.Controllers
             string responseString = ApiHelper.MakeRequest(_apiConfiguration.Url + "travel/policy", _apiConfiguration.Username, _apiConfiguration.Password, "PUT", requestString);
             PolicyResponseModel policyResponse = JsonConvert.DeserializeObject<PolicyResponseModel>(responseString);
 
-            string paymentForm = PaymentHelper.GenerateForm(policyResponse.PolicyNumber, (int)model.OfferResponse.PremiumRsd);
+            string paymentForm = PaymentHelper.GenerateForm(policyResponse.PolicyNumber, (int)(Convert.ToDecimal(model.OfferResponse.PremiumRsd) * 100));
 
             return paymentForm;
         }
