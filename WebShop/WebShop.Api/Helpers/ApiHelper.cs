@@ -26,10 +26,13 @@ namespace WebShop.Api.Helpers
                 string encodedUsernamePass = System.Convert.ToBase64String(System.Text.Encoding.GetEncoding("ISO-8859-1").GetBytes(username + ":" + password));
                 request.Headers.Add(HttpRequestHeader.Authorization, $"Basic {encodedUsernamePass}");
 
-                // Send the data
-                StreamWriter reqStream = new StreamWriter(request.GetRequestStream());
-                reqStream.Write(body);
-                reqStream.Close();
+                if (!method.Equals("GET"))
+                {
+                    // Send the data
+                    StreamWriter reqStream = new StreamWriter(request.GetRequestStream());
+                    reqStream.Write(body);
+                    reqStream.Close();
+                }
 
                 // Get the response
                 HttpWebResponse response = (HttpWebResponse)request.GetResponse();

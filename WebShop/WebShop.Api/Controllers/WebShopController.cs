@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -88,7 +89,38 @@ namespace WebShop.Api.Controllers
         [Produces("application/json")]
         public RedirectResult SuccessCallback()
         {
-            return Redirect(_apiConfiguration.WebUrl + "success-page"); 
+            System.Collections.Specialized.NameValueCollection responseCollection = new System.Collections.Specialized.NameValueCollection();
+            string responseBody = new StreamReader(Request.Body).ReadToEnd();
+            responseCollection = System.Web.HttpUtility.ParseQueryString(responseBody);
+
+            string merchantId = responseCollection["MerchantID"];
+            string terminalId = responseCollection["TerminalID"];
+            string tranCode = responseCollection["TranCode"];
+            string currency = responseCollection["Currency"];
+            string approvalCode = responseCollection["ApprovalCode"];
+            string orderId = responseCollection["OrderID"];
+            string signature = responseCollection["Signature"];
+            string purchaseTime = responseCollection["PurchaseTime"];
+            string totalAmount = responseCollection["TotalAmount"];
+            string xid = responseCollection["XID"];
+            string rrn = responseCollection["Rrn"];
+
+            // get offer id
+            string responseSearchOffer = ApiHelper.MakeRequest(_apiConfiguration.Url + $"search/offer?policyNumber={orderId}", _apiConfiguration.Username, _apiConfiguration.Password, "GET", null);
+            OfferSearchResponseModel offerSearchResponse = JsonConvert.DeserializeObject<OfferSearchResponseModel>(responseSearchOffer);
+
+            // send data to drf
+            DrfRequestModel drfRequestModel = new DrfRequestModel()
+            {
+                OfferId = offerSearchResponse.OfferId,
+                ApprovalId = approvalCode
+            };
+            string requestDrf = JsonConvert.SerializeObject(drfRequestModel);
+            string drfResponse = ApiHelper.MakeRequest(_apiConfiguration.Url + $"travel/policy/drf", _apiConfiguration.Username, _apiConfiguration.Password, "PUT", requestDrf);
+
+            string redirectURI = _apiConfiguration.WebUrl + $"redirect-page/{orderId}/{offerSearchResponse.OfferId}";
+
+            return Redirect(redirectURI); 
         }
 
         [HttpPost("DeclinedCallback")]
