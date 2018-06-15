@@ -1,12 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Hosting;
+using System.IO;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using WebShop.Api.Helpers;
@@ -18,12 +13,10 @@ namespace WebShop.Api.Controllers
     public class WebShopController : Controller
     {
         private readonly ApiConfiguration _apiConfiguration;
-        private readonly IHostingEnvironment _environment;
 
-        public WebShopController(IOptions<ApiConfiguration> apiConfiguration, IHostingEnvironment environment)
+        public WebShopController(IOptions<ApiConfiguration> apiConfiguration)
         {
             _apiConfiguration = apiConfiguration.Value;
-            _environment = environment;
         }
 
         [HttpPost("CalculatePremiums")]
@@ -47,14 +40,6 @@ namespace WebShop.Api.Controllers
 
 
             return result;
-        }
-
-        [HttpGet("InfoUgovaraca")]
-        public string Get()
-        {
-            string OfferId = "50093972-c42d-4f64-bfcd-f0ef58779bcc";
-            string responseString = ApiHelper.SavePDF(_apiConfiguration.Url + OfferId + "/files/2", _apiConfiguration.Username, _apiConfiguration.Password,  _environment, OfferId);
-            return responseString;
         }
 
         [HttpPost("CalculateTravelStarPremium")]
@@ -85,6 +70,64 @@ namespace WebShop.Api.Controllers
             result = JsonConvert.DeserializeObject<OfferResponseModel>(responseString);
 
             return result;
+        }
+
+        [HttpPost("ProceedToPayment")]
+        [Produces("application/json")]
+        public string ProceedToPayment([FromBody]PaymentRequestModel model)
+        {
+            string requestString = JsonConvert.SerializeObject(model.PolicyRequest);
+            string responseString = ApiHelper.MakeRequest(_apiConfiguration.Url + "travel/policy", _apiConfiguration.Username, _apiConfiguration.Password, "PUT", requestString);
+            PolicyResponseModel policyResponse = JsonConvert.DeserializeObject<PolicyResponseModel>(responseString);
+
+            string paymentForm = PaymentHelper.GenerateForm(policyResponse.PolicyNumber, (int)(Convert.ToDecimal(model.OfferResponse.PremiumRsd) * 100));
+
+            return paymentForm;
+        }
+
+        [HttpPost("SuccessCallback")]
+        [Produces("application/json")]
+        public RedirectResult SuccessCallback()
+        {
+            System.Collections.Specialized.NameValueCollection responseCollection = new System.Collections.Specialized.NameValueCollection();
+            string responseBody = new StreamReader(Request.Body).ReadToEnd();
+            responseCollection = System.Web.HttpUtility.ParseQueryString(responseBody);
+
+            string merchantId = responseCollection["MerchantID"];
+            string terminalId = responseCollection["TerminalID"];
+            string tranCode = responseCollection["TranCode"];
+            string currency = responseCollection["Currency"];
+            string approvalCode = responseCollection["ApprovalCode"];
+            string orderId = responseCollection["OrderID"];
+            string signature = responseCollection["Signature"];
+            string purchaseTime = responseCollection["PurchaseTime"];
+            string totalAmount = responseCollection["TotalAmount"];
+            string xid = responseCollection["XID"];
+            string rrn = responseCollection["Rrn"];
+
+            // get offer id
+            string responseSearchOffer = ApiHelper.MakeRequest(_apiConfiguration.Url + $"search/offer?policyNumber={orderId}", _apiConfiguration.Username, _apiConfiguration.Password, "GET", null);
+            OfferSearchResponseModel offerSearchResponse = JsonConvert.DeserializeObject<OfferSearchResponseModel>(responseSearchOffer);
+
+            // send data to drf
+            DrfRequestModel drfRequestModel = new DrfRequestModel()
+            {
+                OfferId = offerSearchResponse.OfferId,
+                ApprovalId = approvalCode
+            };
+            string requestDrf = JsonConvert.SerializeObject(drfRequestModel);
+            string drfResponse = ApiHelper.MakeRequest(_apiConfiguration.Url + $"travel/policy/drf", _apiConfiguration.Username, _apiConfiguration.Password, "PUT", requestDrf);
+
+            string redirectURI = _apiConfiguration.WebUrl + $"redirect-page/{orderId}/{offerSearchResponse.OfferId}";
+
+            return Redirect(redirectURI); 
+        }
+
+        [HttpPost("DeclinedCallback")]
+        [Produces("application/json")]
+        public RedirectResult DeclinedCallback()
+        {
+            return Redirect(_apiConfiguration.WebUrl + "declined-page");
         }
 
         [NonAction]
