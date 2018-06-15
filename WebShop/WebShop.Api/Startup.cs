@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using WebShop.Api.Helpers;
@@ -39,7 +42,8 @@ namespace WebShop.Api
             }
 
             app.UseCors(builder => builder
-                        .WithOrigins("http://localhost:4200")
+                      //  .WithOrigins("http://localhost:4200")
+                        .WithOrigins("https://webshop.grawe.rs")
                         .AllowAnyMethod()
                         .AllowAnyHeader()
                         .AllowCredentials());
@@ -47,6 +51,16 @@ namespace WebShop.Api
             app.UseMiddleware(typeof(ErrorHandlingMiddleware));
 
             app.UseMvc();
+
+
+            app.UseStaticFiles();
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(Path.Combine(env.ContentRootPath, "Files")),
+                RequestPath = new PathString("/Files")
+            });
+
         }
     }
 }

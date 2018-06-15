@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
@@ -17,10 +18,12 @@ namespace WebShop.Api.Controllers
     public class WebShopController : Controller
     {
         private readonly ApiConfiguration _apiConfiguration;
+        private readonly IHostingEnvironment _environment;
 
-        public WebShopController(IOptions<ApiConfiguration> apiConfiguration)
+        public WebShopController(IOptions<ApiConfiguration> apiConfiguration, IHostingEnvironment environment)
         {
             _apiConfiguration = apiConfiguration.Value;
+            _environment = environment;
         }
 
         [HttpPost("CalculatePremiums")]
@@ -44,6 +47,14 @@ namespace WebShop.Api.Controllers
 
 
             return result;
+        }
+
+        [HttpGet("InfoUgovaraca")]
+        public string Get()
+        {
+            string OfferId = "50093972-c42d-4f64-bfcd-f0ef58779bcc";
+            string responseString = ApiHelper.SavePDF(_apiConfiguration.Url + OfferId + "/files/2", _apiConfiguration.Username, _apiConfiguration.Password,  _environment, OfferId);
+            return responseString;
         }
 
         [HttpPost("CalculateTravelStarPremium")]
