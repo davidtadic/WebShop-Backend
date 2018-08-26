@@ -33,9 +33,9 @@ namespace WebShop.Api
             }
 
             app.UseCors(builder => builder
-                        //.WithOrigins("http://localhost:4200")
-                        .WithOrigins("http://webshoptest.azurewebsites.net")
-                        .WithOrigins("https://ecg.test.upc.ua")
+                        .WithOrigins("http://localhost:4200")
+                        //.WithOrigins("http://webshoptest.azurewebsites.net")
+                        //.WithOrigins("https://ecg.test.upc.ua")
                         //.AllowAnyOrigin()
                         .AllowAnyMethod()
                         .AllowAnyHeader()
